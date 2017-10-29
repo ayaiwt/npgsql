@@ -653,21 +653,10 @@ namespace Npgsql
                 _row = null;
             }
 
-            // Skip over the other result sets, processing only CommandCompleted for RecordsAffected
-            while (true)
+            while (await NextResult(async))
             {
-                var msg = await SkipUntil(BackendMessageCode.CompletedResponse, BackendMessageCode.ReadyForQuery, async);
-                switch (msg.Code)
-                {
-                case BackendMessageCode.CompletedResponse:
-                    ProcessMessage(msg);
-                    continue;
-                case BackendMessageCode.ReadyForQuery:
-                    ProcessMessage(msg);
-                    return;
-                default:
-                    throw new NpgsqlException("Unexpected message of type " + msg.Code);
-                }
+                // Skip over the other result sets. Note that this does tally records affected
+                // from CommandComplete messages, and properly sets state for auto-prepared statements
             }
         }
 
